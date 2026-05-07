@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akanarama Art AI - Mobile Image Generator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Hide scrollbar for gallery but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Glowing effect for generation */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px 0 rgba(168, 85, 247, 0.4); }
+            50% { box-shadow: 0 0 30px 5px rgba(168, 85, 247, 0.8); }
+        }
+        
+        .generating-glow {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            border-color: #a855f7 !important;
+        }
+
+        /* Toast animation */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="relative h-screen flex flex-col antialiased selection:bg-purple-500 selection:text-white overflow-hidden bg-slate-950">
+
+    <!-- App Header -->
+    <header class="flex-none z-20 backdrop-blur-md bg-slate-900/80 border-b border-slate-800 px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.4)] bg-slate-900 flex items-center justify-center shrink-0">
+                <!-- Professional Cyber-Brain Neon Logo -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#logoGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full p-[6px] drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00f2fe" /> <!-- Cyan -->
+                            <stop offset="100%" stop-color="#a855f7" /> <!-- Purple -->
+                        </linearGradient>
+                    </defs>
+                    <path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v1A1.5 1.5 0 0 1 5.5 7H4a2 2 0 0 0-2 2v2a2.5 2.5 0 0 0 2.5 2.5h.5c.3 0 .5.2.5.5v1.5a3 3 0 0 0 3 3h3" />
+                    <path d="M14.5 2A2.5 2.5 0 0 1 17 4.5v1a1.5 1.5 0 0 0 1.5 1.5h1.5a2 2 0 0 1 2 2v2a2.5 2.5 0 0 1-2.5 2.5h-.5c-.3 0-.5.2-.5.5v1.5a3 3 0 0 1-3 3h-3" />
+                    <path d="M12 11V7" />
+                    <path d="M12 16v-1" />
+                    <path d="M8 12a4 4 0 0 1 8 0" />
+                    <!-- Glowing Neural Nodes -->
+                    <circle cx="12" cy="18" r="1.5" fill="#fff" stroke="none" class="drop-shadow-[0_0_2px_#fff]"/>
+                    <circle cx="12" cy="6" r="1.5" fill="#fff" stroke="none" class="drop-shadow-[0_0_2px_#fff]"/>
+                    <circle cx="7" cy="11" r="1.5" fill="#fff" stroke="none" class="drop-shadow-[0_0_2px_#fff]"/>
+                    <circle cx="17" cy="11" r="1.5" fill="#fff" stroke="none" class="drop-shadow-[0_0_2px_#fff]"/>
+                </svg>
+            </div>
+            <h1 class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">Akanarama Art AI</h1>
+        </div>
+        <button class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-bars text-slate-300"></i>
+        </button>
+    </header>
+
+    <!-- Main Content Area: Split Screen Layout -->
+    <main class="flex-1 flex flex-col md:flex-row w-full overflow-hidden">
+        
+        <!-- PANEL KIRI: Prompt Enhancer -->
+        <div class="w-full md:w-[350px] lg:w-[400px] flex flex-col border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/40 overflow-y-auto p-5 gap-6">
+            <div>
+                <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Prompt Enhancer
+                </h2>
+                <p class="text-xs text-slate-400 leading-relaxed">Ubah ide sederhanamu menjadi prompt bahasa Inggris standar profesional untuk hasil yang menakjubkan.</p>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ide Dasar</label>
+                <textarea id="rawPromptInput" rows="4" 
+                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none transition-all shadow-inner"
+                    placeholder="Contoh: Kucing oren pakai baju astronot di bulan..."></textarea>
+                
+                <!-- Style Selector (Dropdown version) -->
+                <div class="flex flex-col gap-2 mt-2 relative">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Style Gambar (Opsional)</label>
+                    <button id="styleDropdownBtn" onclick="toggleStyleDropdown()" class="w-full flex justify-between items-center bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl px-4 py-3 hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                        <span id="selectedStyleText">Pilih Style (Opsional)</span>
+                        <i class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" id="styleDropdownIcon"></i>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="styleDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 overflow-hidden max-h-60 overflow-y-auto shadow-purple-900/20">
+                        <div class="flex flex-col">
+                            <button onclick="selectStyle('', 'Pilih Style (Opsional)')" class="px-4 py-3 text-left text-sm text-slate-400 hover:bg-slate-700 hover:text-white transition-colors border-b border-slate-700/50 flex items-center gap-2">
+                                <i class="fa-solid fa-ban text-xs opacity-50"></i> Tidak Ada (Default)
+                            </button>
+                            <button onclick="selectStyle('Photorealistic', 'Photorealistic')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors border-b border-slate-700/50">Photorealistic</button>
+                            <button onclick="selectStyle('3D Clay', '3D Clay')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors border-b border-slate-700/50">3D Clay</button>
+                            <button onclick="selectStyle('Pixar / Disney 3D', 'Pixar / Disney 3D')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors border-b border-slate-700/50">Pixar / Disney 3D</button>
+                            <button onclick="selectStyle('Studio Ghibli', 'Studio Ghibli')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors border-b border-slate-700/50">Studio Ghibli</button>
+                            <button onclick="selectStyle('Fantasy Art', 'Fantasy Art')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors border-b border-slate-700/50">Fantasy Art</button>
+                            <button onclick="selectStyle('Cyberpunk', 'Cyberpunk')" class="px-4 py-3 text-left text-sm text-slate-300 hover:bg-purple-600 hover:text-white transition-colors">Cyberpunk</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="enhanceBtn" onclick="enhancePrompt()" class="mt-2 w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-purple-400 hover:text-purple-300 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>Perbagus Prompt AI</span>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-2 flex-1">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-end">
+                    <span>Clean Prompt (Hasil)</span>
+                </label>
+                <div class="relative flex-1 flex flex-col">
+                    <textarea id="cleanPromptOutput" readonly
+                        class="flex-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 focus:outline-none resize-none min-h-[150px] shadow-inner"
+                        placeholder="Hasil prompt bahasa Inggris yang sudah diperbagus akan muncul di sini..."></textarea>
+                    
+                    <button onclick="useCleanPrompt()" class="absolute bottom-3 right-3 bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-purple-500/30 transition-all flex items-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-arrow-right"></i> Gunakan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL KANAN: Image Generator -->
+        <div class="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto relative bg-slate-900">
+            <div class="max-w-4xl mx-auto w-full flex flex-col gap-6 pb-20">
+                
+                <!-- Controls & Inputs -->
+                <div class="flex flex-col gap-4">
+                    <!-- Prompt Textarea -->
+                    <div class="relative">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Prompt Imajinasi Utama</label>
+                        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500 shadow-md">
+                            <textarea id="promptInput" rows="3" 
+                                class="w-full bg-transparent p-4 text-white placeholder-slate-500 focus:outline-none resize-none"
+                                placeholder="Prompt yang akan digunakan untuk generate gambar..."></textarea>
+                            
+                            <!-- Reference Image Preview -->
+                            <div id="refPreviewContainer" class="hidden px-4 pb-2 flex items-end gap-3">
+                                <div class="relative inline-block">
+                                    <img id="refPreviewImg" src="" class="h-16 w-16 object-cover rounded-lg border border-slate-600 shadow-sm">
+                                    <button onclick="clearReference()" class="absolute -top-2 -right-2 bg-slate-700 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow transition-colors">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <span class="text-xs text-slate-400 mb-1">Gambar referensi ditambahkan</span>
+                            </div>
+
+                            <!-- Toolbar -->
+                            <div class="flex items-center justify-between px-3 py-2 bg-slate-800/80 border-t border-slate-700/50">
+                                <div class="flex gap-2">
+                                    <input type="file" id="imageUploadInput" accept="image/png, image/jpeg, image/webp" class="hidden">
+                                    <button onclick="document.getElementById('imageUploadInput').click()" class="text-slate-400 hover:text-purple-400 p-2 rounded-lg hover:bg-slate-700/50 transition-colors flex items-center gap-2 text-sm" title="Upload Gambar Referensi">
+                                        <i class="fa-regular fa-image text-lg"></i>
+                                        <span class="font-medium text-xs uppercase tracking-wider">Upload Referensi</span>
+                                    </button>
+                                </div>
+                                <button onclick="clearPrompt()" class="text-slate-400 hover:text-slate-200 p-2 text-xs uppercase tracking-wider font-medium transition-colors">
+                                    Bersihkan Teks
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aspect Ratio Selector -->
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Aspek Rasio</label>
+                        <div class="flex gap-2 bg-slate-800/50 p-1 rounded-xl border border-slate-700 max-w-sm">
+                            <button onclick="setRatio('1:1', this)" class="ratio-btn flex-1 py-2 rounded-lg text-sm font-medium transition-all bg-slate-700 text-white shadow">1:1</button>
+                            <button onclick="setRatio('16:9', this)" class="ratio-btn flex-1 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">16:9</button>
+                            <button onclick="setRatio('9:16', this)" class="ratio-btn flex-1 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">9:16</button>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button (Moved inside content) -->
+                    <button id="generateBtn" onclick="generateImage()" class="mt-2 w-full md:w-auto self-start bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 px-10 rounded-xl shadow-lg shadow-purple-900/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Generate Gambar Sekarang</span>
+                    </button>
+                </div>
+
+                <!-- Image Preview Area -->
+                <div id="imageContainer" class="relative w-full min-h-[350px] md:min-h-[450px] bg-slate-800/30 rounded-2xl border border-slate-700 overflow-hidden flex flex-col items-center justify-center transition-all duration-500 p-4 shadow-inner">
+                    
+                    <!-- Default Placeholder -->
+                    <div id="placeholderState" class="flex flex-col items-center text-slate-500 text-center p-6 w-full h-full justify-center">
+                        <i class="fa-regular fa-image text-4xl mb-3 opacity-50"></i>
+                        <p class="text-sm font-medium">Gambar yang Anda buat akan muncul di sini</p>
+                        <p class="text-xs mt-1 opacity-70">Gunakan prompt di panel kiri untuk hasil terbaik.</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loadingState" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-2xl">
+                        <div class="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+                        <p class="text-purple-400 font-medium animate-pulse">Menghasilkan keajaiban...</p>
+                        <p class="text-xs text-slate-400 mt-2 text-center px-8" id="loadingHint">Sedang merender detail gambar.</p>
+                    </div>
+
+                    <!-- Results Grid (2 Images) -->
+                    <div id="resultsGrid" class="hidden w-full h-full grid grid-cols-1 gap-4 items-center justify-center">
+                        <!-- Image 1 -->
+                        <div id="resultCard1" class="result-card relative rounded-xl overflow-hidden border border-slate-600 shadow-lg group bg-slate-900 w-full" style="aspect-ratio: 1/1;">
+                            <img id="resultImage1" class="absolute inset-0 w-full h-full object-cover" src="" alt="Result 1">
+                            <div class="absolute bottom-3 right-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button onclick="downloadSpecificImage(0)" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-purple-600 text-white shadow-xl transition-all active:scale-90">
+                                    <i class="fa-solid fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Image 2 -->
+                        <div id="resultCard2" class="result-card relative rounded-xl overflow-hidden border border-slate-600 shadow-lg group bg-slate-900 w-full" style="aspect-ratio: 1/1;">
+                            <img id="resultImage2" class="absolute inset-0 w-full h-full object-cover" src="" alt="Result 2">
+                            <div class="absolute bottom-3 right-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button onclick="downloadSpecificImage(1)" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-purple-600 text-white shadow-xl transition-all active:scale-90">
+                                    <i class="fa-solid fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gallery Section -->
+                <div class="mt-4 border-t border-slate-800 pt-6">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-slate-500"></i> Karya Sebelumnya
+                    </h3>
+                    <div id="galleryContainer" class="flex gap-3 overflow-x-auto no-scrollbar pb-4">
+                        <!-- Gallery items will be injected here -->
+                        <p id="emptyGallery" class="text-xs text-slate-500 italic">Belum ada gambar yang dibuat.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 hidden">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-blue-400"></i>
+        <span id="toastMsg" class="text-sm font-medium">Message here</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let selectedRatio = '1:1';
+        let isGenerating = false;
+        let generatedImagesHistory = []; // Stores {url, prompt, ratio}
+        let currentGeneratedUrls = [];
+        let uploadedRefBase64 = null;
+        let uploadedRefMimeType = null;
+        let selectedStyle = ''; // State for Image Style
+
+        const hints = [
+            "Menghubungkan ke Gemini 3.1 Flash Image...",
+            "Memahami prompt Anda...",
+            "Menerapkan warna dan pencahayaan...",
+            "Menyempurnakan detail dan tekstur...",
+            "Sedikit lagi selesai..."
+        ];
+
+        // --- UI Elements ---
+        const promptInput = document.getElementById('promptInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const imageContainer = document.getElementById('imageContainer');
+        const placeholderState = document.getElementById('placeholderState');
+        const loadingState = document.getElementById('loadingState');
+        const resultImage = document.getElementById('resultImage');
+        const imageActions = document.getElementById('imageActions');
+        const galleryContainer = document.getElementById('galleryContainer');
+        const emptyGallery = document.getElementById('emptyGallery');
+        const loadingHint = document.getElementById('loadingHint');
+        const imageUploadInput = document.getElementById('imageUploadInput');
+        const refPreviewContainer = document.getElementById('refPreviewContainer');
+        const refPreviewImg = document.getElementById('refPreviewImg');
+
+        // --- Utility Functions ---
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMsg.textContent = message;
+            
+            if(type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-500';
+            } else if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-green-500';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
+            }
+
+            toast.classList.remove('hidden');
+            toast.classList.add('toast-enter');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('toast-enter');
+            }, 3000);
+        }
+
+        function clearPrompt() {
+            promptInput.value = '';
+            promptInput.focus();
+        }
+
+        function clearReference() {
+            uploadedRefBase64 = null;
+            uploadedRefMimeType = null;
+            if(imageUploadInput) imageUploadInput.value = '';
+            if(refPreviewContainer) refPreviewContainer.classList.add('hidden');
+            if(refPreviewImg) refPreviewImg.src = '';
+        }
+
+        // File Upload Handler
+        if (imageUploadInput) {
+            imageUploadInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const dataUrl = event.target.result;
+                    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9]+);base64,(.+)$/);
+                    if (match) {
+                        uploadedRefMimeType = match[1];
+                        uploadedRefBase64 = match[2];
+                        refPreviewImg.src = dataUrl;
+                        refPreviewContainer.classList.remove('hidden');
+                        showToast('Gambar referensi ditambahkan', 'success');
+                    } else {
+                        showToast('Format gambar tidak didukung', 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function setRatio(ratio, btnElement) {
+            if (isGenerating) return;
+            selectedRatio = ratio;
+            
+            // Update UI buttons
+            const btns = document.querySelectorAll('.ratio-btn');
+            btns.forEach(b => {
+                b.classList.remove('bg-slate-700', 'text-white', 'shadow');
+                b.classList.add('text-slate-400');
+            });
+            
+            btnElement.classList.add('bg-slate-700', 'text-white', 'shadow');
+            btnElement.classList.remove('text-slate-400');
+
+            // Update Image Container aspect ratio for visual feedback
+            const cssRatio = ratio === '16:9' ? '16/9' : ratio === '9:16' ? '9/16' : '1/1';
+            document.querySelectorAll('.result-card').forEach(card => {
+                card.style.aspectRatio = cssRatio;
+            });
+        }
+
+        // --- Style Dropdown Logic ---
+        function toggleStyleDropdown() {
+            const menu = document.getElementById('styleDropdownMenu');
+            const icon = document.getElementById('styleDropdownIcon');
+            menu.classList.toggle('hidden');
+            if (!menu.classList.contains('hidden')) {
+                icon.classList.add('rotate-180');
+            } else {
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function selectStyle(styleValue, styleText) {
+            selectedStyle = styleValue;
+            document.getElementById('selectedStyleText').textContent = styleText;
+            const btn = document.getElementById('styleDropdownBtn');
+            
+            if (styleValue !== '') {
+                btn.classList.add('border-purple-500', 'text-white');
+                btn.classList.remove('border-slate-700', 'text-slate-300');
+            } else {
+                btn.classList.remove('border-purple-500', 'text-white');
+                btn.classList.add('border-slate-700', 'text-slate-300');
+            }
+            toggleStyleDropdown(); // Tutup menu setelah memilih
+        }
+
+        // Menutup dropdown jika user klik di luar area dropdown
+        document.addEventListener('click', function(event) {
+            const dropdownBtn = document.getElementById('styleDropdownBtn');
+            const dropdownMenu = document.getElementById('styleDropdownMenu');
+            if (dropdownBtn && dropdownMenu) {
+                if (!dropdownBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.classList.add('hidden');
+                    document.getElementById('styleDropdownIcon').classList.remove('rotate-180');
+                }
+            }
+        });
+
+        // --- Core Generation Logic ---
+        
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt) {
+                showToast('Mohon masukkan deskripsi gambar terlebih dahulu.', 'error');
+                promptInput.focus();
+                return;
+            }
+
+            if (isGenerating) return;
+
+            // Start Generation State
+            isGenerating = true;
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Memproses...</span>';
+            generateBtn.classList.remove('from-purple-600', 'to-indigo-600');
+            generateBtn.classList.add('bg-slate-700', 'cursor-not-allowed', 'text-slate-400');
+            
+            imageContainer.classList.add('generating-glow');
+            placeholderState.classList.add('hidden');
+            document.getElementById('resultsGrid').classList.add('hidden');
+            loadingState.classList.remove('hidden');
+
+            // Hint cycle
+            let hintIndex = 0;
+            const hintInterval = setInterval(() => {
+                hintIndex = (hintIndex + 1) % hints.length;
+                loadingHint.textContent = hints[hintIndex];
+            }, 2500);
+
+            try {
+                // Setup Gemini API Call for Image Generation
+                const apiKey = ""; // API key injected by Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`;
+                
+                // Helper function to make 1 request
+                const makeRequest = async (variationIndex) => {
+                    // Tambahkan spasi tersembunyi sebagai variasi agar API menghasilkan 2 gambar yang berbeda
+                    let currentPrompt = prompt + " ".repeat(variationIndex);
+                    
+                    let promptParts = [{ text: currentPrompt }];
+                    if (uploadedRefBase64) {
+                        promptParts.push({
+                            inlineData: { mimeType: uploadedRefMimeType, data: uploadedRefBase64 }
+                        });
+                    }
+
+                    const payload = {
+                        contents: [{ role: 'user', parts: promptParts }],
+                        generationConfig: {
+                            responseModalities: uploadedRefBase64 ? ['TEXT', 'IMAGE'] : ['IMAGE'],
+                            imageConfig: { aspectRatio: selectedRatio }
+                        }
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error?.message || "Gagal menghubungi server AI.");
+                    
+                    const inlineData = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData;
+                    if (!inlineData) throw new Error("Format respons tidak valid. Gambar tidak ditemukan.");
+                    
+                    return `data:${inlineData.mimeType};base64,${inlineData.data}`;
+                };
+
+                // Request 2 images in parallel
+                const [url1, url2] = await Promise.all([makeRequest(1), makeRequest(2)]);
+                
+                // Update State & UI
+                currentGeneratedUrls = [url1, url2];
+                document.getElementById('resultImage1').src = url1;
+                document.getElementById('resultImage2').src = url2;
+                
+                const grid = document.getElementById('resultsGrid');
+                grid.classList.remove('hidden');
+                grid.classList.replace('grid-cols-1', 'grid-cols-2');
+                document.getElementById('resultCard2').classList.remove('hidden');
+                
+                // Add to History (menambahkan keduanya ke galeri)
+                addToHistory(url2, prompt, selectedRatio);
+                addToHistory(url1, prompt, selectedRatio);
+                
+                showToast('2 Pilihan gambar berhasil dibuat!', 'success');
+
+            } catch (error) {
+                console.error("Generation Error:", error);
+                showToast(error.message, 'error');
+                
+                // Revert to placeholder if no previous image exists
+                if (currentGeneratedUrls.length === 0) {
+                    placeholderState.classList.remove('hidden');
+                } else {
+                    document.getElementById('resultsGrid').classList.remove('hidden');
+                }
+            } finally {
+                // Reset State
+                clearInterval(hintInterval);
+                isGenerating = false;
+                loadingState.classList.add('hidden');
+                imageContainer.classList.remove('generating-glow');
+                
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fa-solid fa-bolt"></i><span>Generate Gambar</span>';
+                generateBtn.classList.add('from-purple-600', 'to-indigo-600');
+                generateBtn.classList.remove('bg-slate-700', 'cursor-not-allowed', 'text-slate-400');
+            }
+        }
+
+        // --- Gallery & Actions ---
+
+        function addToHistory(url, prompt, ratio) {
+            if (emptyGallery && !emptyGallery.classList.contains('hidden')) {
+                emptyGallery.classList.add('hidden');
+            }
+
+            const itemConfig = { url, prompt, ratio };
+            generatedImagesHistory.unshift(itemConfig);
+
+            const imgDiv = document.createElement('div');
+            imgDiv.className = 'min-w-[80px] w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-500 cursor-pointer flex-shrink-0 relative group transition-all';
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'w-full h-full object-cover';
+            
+            // Click to view
+            imgDiv.onclick = () => {
+                if (isGenerating) return;
+                currentGeneratedUrls = [url]; // Set active to only this one
+                document.getElementById('resultImage1').src = url;
+                
+                // Show single view mode
+                const grid = document.getElementById('resultsGrid');
+                grid.classList.remove('hidden');
+                grid.classList.replace('grid-cols-2', 'grid-cols-1');
+                document.getElementById('resultCard2').classList.add('hidden');
+                
+                placeholderState.classList.add('hidden');
+                
+                // Set aspect ratio back based on history
+                const cssRatio = ratio === '16:9' ? '16/9' : ratio === '9:16' ? '9/16' : '1/1';
+                document.querySelectorAll('.result-card').forEach(card => {
+                    card.style.aspectRatio = cssRatio;
+                });
+                
+                promptInput.value = prompt;
+            };
+
+            imgDiv.appendChild(img);
+            galleryContainer.insertBefore(imgDiv, galleryContainer.firstChild);
+        }
+
+        function downloadSpecificImage(index) {
+            const url = currentGeneratedUrls[index];
+            if (!url) {
+                showToast("Tidak ada gambar untuk diunduh.", "error");
+                return;
+            }
+            
+            const a = document.createElement('a');
+            a.href = url;
+            // Generate random filename
+            const filename = `AkanaramaArt_${Math.floor(Math.random() * 10000)}.png`;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showToast("Mengunduh gambar...", "success");
+        }
+
+        // --- Prompt Enhancer Logic ---
+        async function enhancePrompt() {
+            const rawPrompt = document.getElementById('rawPromptInput').value.trim();
+            const cleanPromptOutput = document.getElementById('cleanPromptOutput');
+            const enhanceBtn = document.getElementById('enhanceBtn');
+
+            if (!rawPrompt) {
+                showToast('Masukkan ide dasar terlebih dahulu!', 'error');
+                document.getElementById('rawPromptInput').focus();
+                return;
+            }
+
+            enhanceBtn.disabled = true;
+            enhanceBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Memperbagus...</span>';
+            cleanPromptOutput.value = "Sedang meracik prompt profesional...";
+
+            try {
+                // Menggunakan model Gemini Text standar untuk meningkatkan prompt
+                let systemPrompt = "Kamu adalah asisten AI Image Prompt Engineer profesional. Tugasmu adalah mengubah ide sederhana pengguna menjadi prompt gambar berbahasa Inggris yang sangat detail, profesional, dan imajinatif. Tambahkan detail resolusi tinggi, gaya seni (misal: cinematic lighting, octane render, masterpiece), pencahayaan, suasana, dan komposisi yang relevan. HANYA KEMBALIKAN TEKS PROMPTNYA SAJA TANPA PENJELASAN, TANPA BASA-BASI, DAN TANPA TANDA KUTIP.";
+                
+                if (selectedStyle) {
+                    systemPrompt += `\n\nPENTING: Gaya visual (Art Style) WAJIB difokuskan pada gaya "${selectedStyle}". Pastikan kata-kata dalam prompt output sangat mendeskripsikan dan mendukung gaya ini secara spesifik.`;
+                }
+
+                const apiKey = ""; // API key otomatis terisi oleh sistem Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: rawPrompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error?.message || "Gagal menghubungi AI teks.");
+
+                const enhancedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (enhancedText) {
+                    cleanPromptOutput.value = enhancedText.trim();
+                    showToast('Prompt berhasil diperbagus!', 'success');
+                } else {
+                    throw new Error("Gagal memformat prompt.");
+                }
+
+            } catch (error) {
+                console.error("Enhance Error:", error);
+                showToast(error.message, 'error');
+                cleanPromptOutput.value = "";
+            } finally {
+                enhanceBtn.disabled = false;
+                enhanceBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i><span>Perbagus Prompt AI</span>';
+            }
+        }
+
+        function useCleanPrompt() {
+            const cleanPrompt = document.getElementById('cleanPromptOutput').value.trim();
+            if (!cleanPrompt || cleanPrompt === "Sedang meracik prompt profesional...") {
+                showToast("Tidak ada prompt valid untuk digunakan.", "error");
+                return;
+            }
+
+            const mainPromptInput = document.getElementById('promptInput');
+            mainPromptInput.value = cleanPrompt;
+            showToast("Prompt disalin ke Image Generator!", "success");
+            
+            // Animasi sorot singkat untuk visual feedback
+            mainPromptInput.parentElement.classList.add('ring-2', 'ring-purple-500');
+            setTimeout(() => {
+                mainPromptInput.parentElement.classList.remove('ring-2', 'ring-purple-500');
+            }, 1000);
+        }
+
+    </script>
+</body>
+</html>
